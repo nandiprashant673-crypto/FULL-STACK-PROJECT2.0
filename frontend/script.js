@@ -1,92 +1,43 @@
-// --- 1. REGISTER FUNCTION ---
-async function register() {
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPass').value;
+// REPLACE the URL below with your actual Render URL
+const API_URL = "https://full-stack-project2-0.onrender.com";
 
-    const response = await fetch('https://full-stack-project2-0.onrender.com/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ "name": name, "email": email, "password": password })
-    });
+const registrationForm = document.getElementById('registrationForm');
 
-    const data = await response.json();
-    alert(data.message);
-}
+if (registrationForm) {
+    registrationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-// --- 2. LOGIN FUNCTION ---
-async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPass').value;
+        // Get values from your input fields
+        const nameInput = document.getElementById('fullName');
+        const emailInput = document.getElementById('email');
 
-    const response = await fetch('http://127.0.0.1:5000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ "email": email, "password": password })
-    });
+        const formData = {
+            name: nameInput.value,
+            email: emailInput.value
+        };
 
-    const data = await response.json();
+        try {
+            // Sending data to the /submit route on your Render backend
+            const response = await fetch(`${API_URL}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
 
-    if (response.status === 200) {
-        alert("Welcome " + data.user.name + "!");
-        localStorage.setItem('userId', data.user.id);
-        window.location.href = "dashboard.html"; 
-    } else {
-        alert(data.message || "Invalid Credentials!");
-    }
-}
+            const result = await response.json();
 
-// --- 3. ADD TASK FUNCTION ---
-async function addTask() {
-    const userId = localStorage.getItem('userId');
-    const task = document.getElementById('taskInput').value;
-
-    if (!task) {
-        alert("Please enter a task!");
-        return;
-    }
-
-    await fetch('http://127.0.0.1:5000/add-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ "user_id": userId, "task": task })
-    });
-
-    document.getElementById('taskInput').value = ''; 
-    getTasks(); 
-}
-
-// --- 4. VIEW TASKS FUNCTION ---
-async function getTasks() {
-    const userId = localStorage.getItem('userId');
-    const response = await fetch(`https://internaship-project.onrender.com/get-tasks/${userId}`);
-    const tasks = await response.json();
-
-    const taskList = document.getElementById('taskList');
-    taskList.innerHTML = ''; 
-
-    tasks.forEach(t => {
-        const taskDiv = document.createElement('div');
-        taskDiv.style = "display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; align-items: center;";
-        taskDiv.innerHTML = `
-            <span>${t.task}</span>
-            <button onclick="deleteTask(${t.id})" style="width: 80px; background-color: #dc3545; color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer;">Delete</button>
-        `;
-        taskList.appendChild(taskDiv);
+            if (response.ok) {
+                alert("✅ Student data saved successfully!");
+                registrationForm.reset();
+            } else {
+                alert("❌ Error: " + (result.error || "Something went wrong"));
+            }
+        } catch (error) {
+            console.error("Connection Error:", error);
+            alert("❌ Could not connect to the backend. Please wait a moment and try again.");
+        }
     });
 }
 
-// --- 5. DELETE TASK FUNCTION ---
-async function deleteTask(taskId) {
-    if (confirm("Are you sure you want to delete this task?")) {
-        await fetch(`http://127.0.0.1:5000/delete-task/${taskId}`, { method: 'DELETE' });
-        getTasks(); 
-    }
-}
-
-// --- 6. LOGOUT FUNCTION ---
-function logout() {
-    localStorage.clear();
-    window.location.href = "index.html";
-
-}
