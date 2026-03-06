@@ -2,12 +2,13 @@
 const API_URL = "https://full-stack-project2-0.onrender.com";
 
 async function register() {
-    // These IDs now match your HTML exactly: regName and regEmail
+    console.log("Register button clicked!");
+
     const nameInput = document.getElementById('regName');
     const emailInput = document.getElementById('regEmail');
 
-    if (!nameInput.value || !emailInput.value) {
-        alert("Please fill in both Name and Email");
+    if (!nameInput || !emailInput) {
+        console.error("HTML IDs regName or regEmail not found!");
         return;
     }
 
@@ -17,7 +18,6 @@ async function register() {
     };
 
     try {
-        // Sending data to your Render backend
         const response = await fetch(`${API_URL}/submit`, {
             method: 'POST',
             headers: {
@@ -30,16 +30,16 @@ async function register() {
 
         if (response.ok) {
             alert("✅ Student data saved successfully!");
-            // Clear the inputs after success
             nameInput.value = "";
             emailInput.value = "";
         } else {
-            alert("❌ Error: " + (result.error || "Something went wrong"));
+            alert("❌ Server Error: " + (result.error || "Unknown error"));
         }
     } catch (error) {
         console.error("Connection Error:", error);
-        alert("❌ Could not connect to the backend. Please check if Render is Live.");
+        alert("❌ Could not connect to the backend. Is Render Live?");
     }
 }
+
 
 
