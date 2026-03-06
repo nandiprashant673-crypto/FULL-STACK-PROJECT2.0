@@ -1,85 +1,66 @@
+import sqlite3
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import mysql.connector
+import os
 
 app = Flask(__name__)
-# This line fixes the red error in your browser console
+# CORS allows your Netlify frontend to talk to this Render backend
 CORS(app)
 
-# MySQL Connection - Make sure your password is correct here
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="Prashant@2002",
-    database="fullstack_db"
-)
+DB_PATH = 'database.db'
 
-cursor = db.cursor(dictionary=True)
+def init_db():
+    """Creates the database and table if they don't exist."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-@app.route("/")
+@app.route('/')
 def home():
-    return "Backend Connected to MySQL Successfully!"
+    return jsonify({"message": "Backend is running successfully!"})
 
-# 1. REGISTER API
-@app.route("/register", methods=["POST"])
-def register():
-    data = request.json
-    name = data["name"]
-    email = data["email"]
-    password = data["password"]
-
+@app.route('/submit', methods=['POST'])
+def submit_data():
     try:
-        query = "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)"
-        values = (name, email, password)
-        cursor.execute(query, values)
-        db.commit()
-        return jsonify({"message": "User Registered Successfully!"}), 201
+        data = request.json
+        name = data.get('name')
+        email = data.get('email')
+
+        if not name or not email:
+            return jsonify({"error": "Name and Email are required"}), 400
+
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO students (name, email) VALUES (?, ?)', (name, email))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Student data saved successfully!"}), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
-# 2. LOGIN API
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.json
-    email = data["email"]
-    password = data["password"]
+@app.route('/students', methods=['GET'])
+def get_students():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM students')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    students = [{"id": r[0], "name": r[1], "email": r[2]} for r in rows]
+    return jsonify(students)
 
-    query = "SELECT id, name FROM users WHERE email = %s AND password = %s"
-    cursor.execute(query, (email, password))
-    user = cursor.fetchone()
+if __name__ == '__main__':
+    init_db()
+    # Use the PORT provided by Render or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
 
-    if user:
-        return jsonify({"message": "Login Successful!", "user": user}), 200
-    else:
-        return jsonify({"message": "Invalid Credentials!"}), 401
-
-# 3. ADD TASK API
-@app.route("/add-task", methods=["POST"])
-def add_task():
-    data = request.json
-    user_id = data["user_id"]
-    task = data["task"]
-
-    query = "INSERT INTO tasks (user_id, task) VALUES (%s, %s)"
-    cursor.execute(query, (user_id, task))
-    db.commit()
-    return jsonify({"message": "Task Added Successfully!"})
-
-# 4. VIEW TASKS API
-@app.route("/get-tasks/<int:user_id>", methods=["GET"])
-def get_tasks(user_id):
-    query = "SELECT * FROM tasks WHERE user_id = %s"
-    cursor.execute(query, (user_id,))
-    tasks = cursor.fetchall()
-    return jsonify(tasks)
-
-# 5. DELETE TASK API
-@app.route("/delete-task/<int:task_id>", methods=["DELETE"])
-def delete_task(task_id):
-    query = "DELETE FROM tasks WHERE id = %s"
-    cursor.execute(query, (task_id,))
-    db.commit()
-    return jsonify({"message": "Task Deleted Successfully!"})
-
-if __name__ == "__main__":
-    app.run(debug=True)
