@@ -1,14 +1,15 @@
-
+// Use your actual Render URL here
 const API_URL = "https://full-stack-project2-0.onrender.com";
 
 async function register() {
-    console.log("Register button clicked!");
+    console.log("Register function triggered");
 
+    // Matching your HTML IDs: regName and regEmail
     const nameInput = document.getElementById('regName');
     const emailInput = document.getElementById('regEmail');
 
-    if (!nameInput || !emailInput) {
-        console.error("HTML IDs regName or regEmail not found!");
+    if (!nameInput.value || !emailInput.value) {
+        alert("Please enter both Name and Email");
         return;
     }
 
@@ -36,10 +37,11 @@ async function register() {
             alert("❌ Server Error: " + (result.error || "Unknown error"));
         }
     } catch (error) {
-        console.error("Connection Error:", error);
-        alert("❌ Could not connect to the backend. Is Render Live?");
+        console.error("Fetch Error:", error);
+        alert("❌ Connection failed. Make sure your Render backend is 'Live'.");
     }
 }
+
 
 
 
